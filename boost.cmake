@@ -13,8 +13,21 @@
 
 set(Boost_USE_STATIC_LIBS OFF)
 set(BOOST_VER 1.75.0)
-set(BOOST_COMPONENTS atomic date_time chrono filesystem program_options system thread)
-find_package(Boost ${BOOST_VER} EXACT COMPONENTS ${BOOST_COMPONENTS} unit_test_framework)
+set(Boost_NO_BOOST_CMAKE ON)
+set(BOOST_COMPONENTS filesystem program_options system)
+
+# Workaround function to allow cmake call `find_package` twice. Avoide side effects from local variables, which are produced be `find_package`
+function(findBoost Required)
+    find_package(Boost ${BOOST_VER} EXACT ${Required} 
+        COMPONENTS ${BOOST_COMPONENTS}
+        OPTIONAL_COMPONENTS unit_test_framework
+    )
+    set(Boost_FOUND ${Boost_FOUND} PARENT_SCOPE)
+    set(Boost_LIBRARIES ${Boost_LIBRARIES} PARENT_SCOPE)
+    set(Boost_INCLUDE_DIRS ${Boost_INCLUDE_DIRS} PARENT_SCOPE)
+endfunction()
+
+findBoost("")
 
 if(NOT Boost_FOUND)
   string(REPLACE "." "_" BOOST_VER_ ${BOOST_VER}) 
@@ -54,10 +67,11 @@ if(NOT Boost_FOUND)
       message( FATAL_ERROR "Bad exit status of b2")
     endif()
     set(BOOST_ROOT ${boost_BINARY_DIR} CACHE PATH "Root folder to find boost" FORCE)
+    set(Boost_DIR ${boost_BINARY_DIR} CACHE PATH "Root folder to find boost" FORCE)
   endif()
-  find_package(Boost ${BOOST_VER} EXACT COMPONENTS ${BOOST_COMPONENTS})
+  findBoost(REQUIRED)
 endif()
 
-message(STATUS " boost libs ${Boost_LIBRARIES} ")
-message(STATUS " boost includes ${Boost_INCLUDE_DIRS} ")
+message(STATUS " boost libs ${Boost_LIBRARIES}")
+message(STATUS " boost includes ${Boost_INCLUDE_DIRS}")
 include_directories(${Boost_INCLUDE_DIRS})
